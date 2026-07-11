@@ -3,7 +3,7 @@ package mirrors
 import (
 	"testing"
 
-	"pwnlibc/internal/config"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/config"
 )
 
 func TestNewRegistryDefaultOrdering(t *testing.T) {

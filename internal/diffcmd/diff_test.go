@@ -3,7 +3,7 @@ package diffcmd
 import (
 	"testing"
 
-	"pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 )
 
 func TestDiffSymbols(t *testing.T) {

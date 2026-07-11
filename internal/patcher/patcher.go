@@ -16,7 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"pwnlibc/internal/pwnerr"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/pwnerr"
 )
 
 // Result describes what was patched and where the output landed.

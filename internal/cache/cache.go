@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"pwnlibc/internal/config"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/config"
 )
 
 // Paths bundles the resolved filesystem locations derived from Config.

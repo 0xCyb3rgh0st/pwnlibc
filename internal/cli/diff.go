@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/diffcmd"
-	"pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/diffcmd"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 )
 
 func newDiffCmd() *cobra.Command {

@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/buildsrc"
-	"pwnlibc/internal/mirrors"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/mirrors"
 )
 
 // Check is one doctor diagnostic result.
@@ -98,12 +97,4 @@ func dirWritable(dir string) bool {
 	_ = f.Close()
 	_ = os.Remove(name)
 	return true
-}
-
-func freeBytes(path string) (uint64, error) {
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(path, &stat); err != nil {
-		return 0, err
-	}
-	return stat.Bavail * uint64(stat.Bsize), nil
 }

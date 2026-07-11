@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/fetch"
-	"pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/fetch"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
 )
 
 func newMirrorCmd() *cobra.Command {

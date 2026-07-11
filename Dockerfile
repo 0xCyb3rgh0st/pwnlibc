@@ -19,7 +19,7 @@ FROM base AS build
 ARG VERSION=dev
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go build -trimpath -ldflags "-s -w -X pwnlibc/internal/cli.Version=${VERSION}" \
+    go build -trimpath -ldflags "-s -w -X github.com/0xcyberghost/pwnlibc/internal/cli.Version=${VERSION}" \
     -o /out/pwnlibc ./cmd/pwnlibc
 
 # --- runtime: slim final image -------------------------------------------

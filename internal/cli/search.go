@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/elfinfo"
-	"pwnlibc/internal/libcrip"
-	"pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
 )
 
 func newSearchCmd() *cobra.Command {

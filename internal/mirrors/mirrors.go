@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"pwnlibc/internal/config"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/config"
 )
 
 // Mirror is a single apt-style mirror hosting the Ubuntu glibc pool.

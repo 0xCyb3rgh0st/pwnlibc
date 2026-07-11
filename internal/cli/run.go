@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/buildsrc"
-	"pwnlibc/internal/patcher"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/patcher"
 )
 
 func newRunCmd() *cobra.Command {

@@ -4,12 +4,12 @@ package main
 import (
 	"os"
 
-	"pwnlibc/internal/cli"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/cli"
 )
 
 // version is overridden at build time via:
 //
-//	go build -ldflags "-X pwnlibc/internal/cli.Version=$(git describe --tags)"
+//	go build -ldflags "-X github.com/0xCyb3rgh0st/pwnlibc/internal/cli.Version=$(git describe --tags)"
 var version = "dev"
 
 func main() {

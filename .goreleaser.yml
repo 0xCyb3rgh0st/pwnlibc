@@ -1,0 +1,50 @@
+version: 2
+project_name: pwnlibc
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: pwnlibc
+    main: ./cmd/pwnlibc
+    binary: pwnlibc
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/0xCyb3rgh0st/pwnlibc/internal/cli.Version={{.Version}}
+
+archives:
+  - id: pwnlibc
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^test:"
+      - "^ci:"
+
+release:
+  github:
+    owner: 0xCyb3rgh0st
+    name: pwnlibc
+  footer: |
+    ## Note on `patch`/`build`/`run`
+
+    These prebuilt binaries are plain Go binaries — they do **not** bundle
+    `patchelf` or the Docker CLI the way the `pwnlibc:latest` container image
+    does. `patch` needs `patchelf` on your PATH; `build`/`run` need a local
+    Docker daemon. If you don't want to manage those yourself, use the
+    Docker image instead (see the README).

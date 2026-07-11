@@ -11,7 +11,7 @@ import (
 	_ "embed"
 	"encoding/json"
 
-	"pwnlibc/internal/glibcver"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/glibcver"
 )
 
 //go:embed vulns.json

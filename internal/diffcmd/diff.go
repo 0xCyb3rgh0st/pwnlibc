@@ -4,7 +4,7 @@
 package diffcmd
 
 import (
-	"pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 )
 
 // SymbolDelta describes one symbol's change between file A and file B.

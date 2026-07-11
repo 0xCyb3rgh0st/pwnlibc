@@ -12,10 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/archive"
-	"pwnlibc/internal/elfinfo"
-	"pwnlibc/internal/fetch"
-	"pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/archive"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/fetch"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
 )
 
 // triplets maps a Debian arch name to its multiarch library directory

@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/bundle"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/bundle"
 )
 
 func newBundleCmd() *cobra.Command {

@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/elfinfo"
-	"pwnlibc/internal/identify"
-	"pwnlibc/internal/libcrip"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/identify"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
 )
 
 func newIdentifyCmd() *cobra.Command {

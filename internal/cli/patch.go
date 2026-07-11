@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/elfinfo"
-	"pwnlibc/internal/identify"
-	"pwnlibc/internal/libcrip"
-	"pwnlibc/internal/patcher"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/identify"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/patcher"
 )
 
 func newPatchCmd() *cobra.Command {

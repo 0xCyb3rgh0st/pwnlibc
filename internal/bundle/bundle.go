@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"pwnlibc/internal/archive"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/archive"
 )
 
 // Export writes every file under libsDir into a gzip-compressed tar at destTar.

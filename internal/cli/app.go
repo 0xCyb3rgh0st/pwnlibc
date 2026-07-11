@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/cache"
-	"pwnlibc/internal/config"
-	"pwnlibc/internal/index"
-	"pwnlibc/internal/jsonout"
-	"pwnlibc/internal/mirrors"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/cache"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/config"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/index"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/jsonout"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/mirrors"
 )
 
 // Version is set via -ldflags at build time.

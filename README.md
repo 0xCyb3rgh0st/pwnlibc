@@ -31,19 +31,42 @@ reimplementation of the same *idea* — not a port of its code — built around:
   (air-gapped export/import), `vuln` (known-CVE lookup), `doctor`
   (environment self-check).
 
-## Quick start
+## Install
 
-Requires only Docker + Docker Compose.
+Three ways to get `pwnlibc`, in order of how much you want Docker to manage
+for you:
+
+### 1. Docker (recommended — no local Go, `patchelf`, or Docker toolchain juggling)
 
 ```sh
-git clone <this-repo>
+git clone https://github.com/0xCyb3rgh0st/pwnlibc.git
 cd pwnlibc
 ./pwnlibc.sh mirror update          # or ./pwnlibc.ps1 on Windows
 ./pwnlibc.sh download 2.31-0ubuntu9.9_amd64
 ./pwnlibc.sh identify libs/2.31-0ubuntu9.9/amd64/libc.so.6
 ```
 
-The first run builds the `pwnlibc:latest` image; after that, every command is
+### 2. Prebuilt binary (GitHub Releases)
+
+Every tagged version is cross-compiled for linux/darwin/windows (amd64 +
+arm64) by CI ([`.goreleaser.yml`](.goreleaser.yml), driven by the
+`release-binaries` job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+and attached to that tag's [GitHub Release](https://github.com/0xCyb3rgh0st/pwnlibc/releases)
+as ready-to-run archives — download the one for your OS/arch, extract, and
+run `pwnlibc`. These are plain binaries: `patch` needs `patchelf` on your
+PATH and `build`/`run` need a local Docker daemon, since neither is bundled
+outside the container image.
+
+### 3. `go install` (if you already have Go)
+
+```sh
+go install github.com/0xCyb3rgh0st/pwnlibc/cmd/pwnlibc@latest
+```
+
+Same caveat as the prebuilt binaries: `patch`/`build`/`run` expect
+`patchelf`/`docker` to already be on your machine.
+
+The first Docker run builds the `pwnlibc:latest` image; after that, every command is
 just `docker compose run --rm cli <args>` under the hood. Downloaded glibc
 versions land in `./libs`, persisted on the host. Drop challenge binaries
 into `./workdir` before running `patch`/`run` against them — those two

@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 )
 
 func openTestIndex(t *testing.T) *Index {

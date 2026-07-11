@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"pwnlibc/internal/pwnerr"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/pwnerr"
 )
 
 // Symbol is one exported/dynamic symbol with its value (offset from the

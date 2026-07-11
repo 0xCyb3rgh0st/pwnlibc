@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/vulndb"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/vulndb"
 )
 
 func newVulnCmd() *cobra.Command {

@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"pwnlibc/internal/glibcver"
-	"pwnlibc/internal/pwnerr"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/glibcver"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/pwnerr"
 )
 
 // imageForVersion maps a glibc minor version floor to the Ubuntu release

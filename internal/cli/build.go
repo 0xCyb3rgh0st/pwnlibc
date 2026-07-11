@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"pwnlibc/internal/buildsrc"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
 )
 
 func newBuildCmd() *cobra.Command {

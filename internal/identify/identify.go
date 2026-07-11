@@ -7,9 +7,9 @@ package identify
 import (
 	"context"
 
-	"pwnlibc/internal/elfinfo"
-	"pwnlibc/internal/index"
-	"pwnlibc/internal/libcrip"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/index"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
 )
 
 // Method records which technique produced the result.
