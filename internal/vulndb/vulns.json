@@ -1,0 +1,114 @@
+[
+  {
+    "id": "CVE-2015-0235",
+    "name": "GHOST",
+    "affected_from": "2.2",
+    "affected_to": "2.17",
+    "severity": "high",
+    "description": "Heap buffer overflow in __nss_hostname_digits_dots() reachable via gethostbyname*()."
+  },
+  {
+    "id": "CVE-2017-1000366",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.25",
+    "severity": "medium",
+    "description": "LD_LIBRARY_PATH / stack-based buffer overflow in the dynamic linker's handling of malformed LD_ environment variables, usable for local privilege escalation."
+  },
+  {
+    "id": "CVE-2018-11236",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.27",
+    "severity": "high",
+    "description": "Integer overflow in the memory allocation functions of glibc when processing large path/length arguments."
+  },
+  {
+    "id": "CVE-2019-9169",
+    "name": "",
+    "affected_from": "2.25",
+    "affected_to": "2.29",
+    "severity": "medium",
+    "description": "Out-of-bounds read in glob() when processing crafted glob patterns with GLOB_NOMAGIC/GLOB_TILDE."
+  },
+  {
+    "id": "CVE-2020-1752",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.31",
+    "severity": "medium",
+    "description": "Use-after-free in glob() during ~user pattern expansion."
+  },
+  {
+    "id": "CVE-2020-6096",
+    "name": "",
+    "affected_from": "2.16",
+    "affected_to": "2.31",
+    "severity": "medium",
+    "description": "Signed comparison vulnerability in ARM memcpy leading to buffer overflow."
+  },
+  {
+    "id": "CVE-2021-3326",
+    "name": "",
+    "affected_from": "2.26",
+    "affected_to": "2.32",
+    "severity": "low",
+    "description": "Assertion failure (DoS) in iconv when processing crafted ISO-2022-JP-3 sequences."
+  },
+  {
+    "id": "CVE-2021-3999",
+    "name": "",
+    "affected_from": "2.32",
+    "affected_to": "2.34",
+    "severity": "high",
+    "description": "Off-by-one buffer underflow/overflow in getcwd() when the buffer size exactly matches the path length; usable for local exploitation."
+  },
+  {
+    "id": "CVE-2022-23218",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.34",
+    "severity": "high",
+    "description": "Buffer overflow in sunrpc svcunix_create() via long pathname (legacy sunrpc compat code)."
+  },
+  {
+    "id": "CVE-2022-23219",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.34",
+    "severity": "high",
+    "description": "Stack buffer overflow in sunrpc clnt_create() via overly long name."
+  },
+  {
+    "id": "CVE-2023-4911",
+    "name": "Looney Tunables",
+    "affected_from": "2.34",
+    "affected_to": "2.37",
+    "severity": "high",
+    "description": "Buffer overflow in ld.so's processing of the GLIBC_TUNABLES environment variable, exploitable for local privilege escalation on SUID binaries."
+  },
+  {
+    "id": "CVE-2023-6246",
+    "name": "",
+    "affected_from": "2.36",
+    "affected_to": "2.38",
+    "severity": "high",
+    "description": "Heap buffer overflow in __vsyslog_internal(), reachable via syslog()/vsyslog() with a crafted program name or long message."
+  },
+  {
+    "id": "CVE-2024-2961",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.39",
+    "severity": "medium",
+    "description": "Out-of-bounds write in the iconv ISO-2022-CN-EXT conversion module."
+  },
+  {
+    "id": "CVE-2024-33599",
+    "name": "",
+    "affected_from": "2.2",
+    "affected_to": "2.39",
+    "severity": "high",
+    "description": "Stack buffer overflow in nscd when processing a long netgroup name."
+  }
+]

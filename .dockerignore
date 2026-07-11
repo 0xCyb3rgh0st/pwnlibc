@@ -1,0 +1,6 @@
+libs/
+workdir/
+dist/
+.git/
+*.tar.gz
+*.deb

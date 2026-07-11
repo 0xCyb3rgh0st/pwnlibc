@@ -1,0 +1,62 @@
+services:
+  # Day-to-day usage: `./pwnlibc.sh <args>` / `./pwnlibc.ps1 <args>` run this.
+  cli:
+    build:
+      context: .
+      target: runtime
+      args:
+        VERSION: ${PWNLIBC_VERSION:-dev}
+    image: pwnlibc:latest
+    volumes:
+      - ./libs:/data/libs
+      - ./workdir:/data/workdir
+      - pwnlibc-cache:/home/pwnlibc/.cache/pwnlibc
+    environment:
+      # Used by `build`/`run` to translate container paths back to host
+      # paths when they shell out to `docker run` against the host daemon
+      # (see internal/cli/dockerutil.go). Only meaningful together with the
+      # build-src profile below.
+      HOST_LIBS_DIR: ${PWD}/libs
+      HOST_WORKDIR_DIR: ${PWD}/workdir
+
+  # `docker compose run --rm test` -- runs go vet + go test, no local Go needed.
+  test:
+    build:
+      context: .
+      target: test
+    profiles: ["test"]
+
+  # `docker compose run --rm lint` -- golangci-lint against the mounted source.
+  lint:
+    image: golangci/golangci-lint:v1.60-alpine
+    working_dir: /src
+    volumes:
+      - .:/src
+      - golangci-cache:/root/.cache/golangci-lint
+    command: ["golangci-lint", "run", "./..."]
+    profiles: ["lint"]
+
+  # `docker compose --profile build-src run --rm build-src <args>` -- the
+  # only service with the Docker socket mounted, required for `build` and
+  # `run` since they launch nested Ubuntu containers. Opt-in on purpose:
+  # socket access is equivalent to root on the host.
+  build-src:
+    build:
+      context: .
+      target: runtime
+      args:
+        VERSION: ${PWNLIBC_VERSION:-dev}
+    image: pwnlibc:latest
+    volumes:
+      - ./libs:/data/libs
+      - ./workdir:/data/workdir
+      - pwnlibc-cache:/home/pwnlibc/.cache/pwnlibc
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      HOST_LIBS_DIR: ${PWD}/libs
+      HOST_WORKDIR_DIR: ${PWD}/workdir
+    profiles: ["build-src"]
+
+volumes:
+  pwnlibc-cache:
+  golangci-cache:

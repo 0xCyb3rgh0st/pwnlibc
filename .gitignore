@@ -1,0 +1,12 @@
+/libs/
+/workdir/
+/config.yaml
+*.deb
+*.tar.gz
+!testdata/**
+/dist/
+.pwnlibc-doctor-*
+
+# Local tooling state, not project content
+.claude/
+
