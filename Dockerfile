@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # --- base: shared module cache layer -----------------------------------
-FROM golang:1.23-alpine AS base
+FROM golang:1.26-alpine AS base
 WORKDIR /src
 ENV CGO_ENABLED=0 GOFLAGS=-mod=mod
 RUN apk add --no-cache git
@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     -o /out/pwnlibc ./cmd/pwnlibc
 
 # --- runtime: slim final image -------------------------------------------
-FROM alpine:3.20 AS runtime
+FROM alpine:3.22 AS runtime
 # docker-cli is only exercised by `build`/`run`, which additionally require
 # the build-src compose profile to mount the host's Docker socket in; its
 # presence here is inert (and harmless) without that mount.

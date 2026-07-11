@@ -81,7 +81,7 @@ jobs:
       # doesn't conflict with the project's "no local Go needed" goal.
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.26"
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser

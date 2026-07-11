@@ -1,6 +1,6 @@
 module github.com/0xCyb3rgh0st/pwnlibc
 
-go 1.23
+go 1.26
 
 require (
 	github.com/klauspost/compress v1.17.9
