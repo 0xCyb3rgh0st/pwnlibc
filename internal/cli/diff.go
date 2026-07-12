@@ -7,6 +7,7 @@ import (
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/diffcmd"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newDiffCmd() *cobra.Command {
@@ -29,8 +30,8 @@ func newDiffCmd() *cobra.Command {
 			result := diffcmd.Diff(args[0], infoA, elfinfo.Symbols(fA), args[1], infoB, elfinfo.Symbols(fB))
 
 			app.EmitResult(result, func() {
-				fmt.Printf("%s -> %s\n", args[0], args[1])
-				fmt.Printf("  +%d symbols added, -%d removed, ~%d moved\n",
+				ui.FprintInfo(cmd.OutOrStdout(), "%s -> %s", ui.Cyan(args[0]), ui.Cyan(args[1]))
+				ui.FprintInfo(cmd.OutOrStdout(), "+%d symbols added, -%d removed, ~%d moved",
 					len(result.SymbolsAdded), len(result.SymbolsRemoved), len(result.SymbolsMoved))
 				for _, s := range result.Security {
 					fmt.Printf("  %-10s %s -> %s\n", s.Attribute, s.Before, s.After)

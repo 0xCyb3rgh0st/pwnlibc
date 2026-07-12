@@ -34,6 +34,12 @@ type Candidate struct {
 type Options struct {
 	Timeout    time.Duration
 	MaxRetries int
+	// OnProgress, if set, is called from DownloadFileRacing as bytes
+	// arrive: once with written=0 as soon as the winning response's
+	// headers are known (so the caller can size a progress bar), then
+	// again after every write. total is -1 if the server didn't send
+	// Content-Length.
+	OnProgress func(written, total int64)
 }
 
 func (o Options) withDefaults() Options {
@@ -160,7 +166,14 @@ func DownloadFileRacing(ctx context.Context, candidates []Candidate, destPath st
 	defer func() { _ = out.Close() }()
 
 	h := sha256.New()
-	n, err := io.Copy(out, io.TeeReader(winner.resp.Body, h))
+	var dest io.Writer = io.MultiWriter(out, h)
+	total := winner.resp.ContentLength // -1 if the server didn't send Content-Length
+	if opts.OnProgress != nil {
+		opts.OnProgress(0, total)
+		dest = &progressWriter{w: dest, total: total, onProgress: opts.OnProgress}
+	}
+
+	n, err := io.Copy(dest, winner.resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("downloading from %s: %w", winner.c.MirrorName, err)
 	}
@@ -172,4 +185,20 @@ func DownloadFileRacing(ctx context.Context, candidates []Candidate, destPath st
 		SHA256:     hex.EncodeToString(h.Sum(nil)),
 		Size:       n,
 	}, nil
+}
+
+// progressWriter reports cumulative bytes written after every Write, so a
+// caller can drive a progress bar without needing its own io.Copy loop.
+type progressWriter struct {
+	w          io.Writer
+	written    int64
+	total      int64
+	onProgress func(written, total int64)
+}
+
+func (pw *progressWriter) Write(p []byte) (int, error) {
+	n, err := pw.w.Write(p)
+	pw.written += int64(n)
+	pw.onProgress(pw.written, pw.total)
+	return n, err
 }

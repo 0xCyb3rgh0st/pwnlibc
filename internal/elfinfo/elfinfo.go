@@ -54,12 +54,30 @@ func Load(path string) (*Info, *elf.File, error) {
 
 	info := &Info{
 		Path: path,
-		Arch: f.Machine.String(),
+		Arch: archName(f.Machine),
 		Type: f.Type.String(),
 	}
 	info.BuildID = buildID(f)
 	info.Security = security(f)
 	return info, f, nil
+}
+
+// archName maps an ELF machine constant to the conventional short name
+// (the same vocabulary `uname -m`/dpkg architecture strings use) rather
+// than exposing Go's raw "EM_X86_64"-style constant name.
+func archName(m elf.Machine) string {
+	switch m {
+	case elf.EM_X86_64:
+		return "x86_64"
+	case elf.EM_386:
+		return "i386"
+	case elf.EM_AARCH64:
+		return "aarch64"
+	case elf.EM_ARM:
+		return "arm"
+	default:
+		return m.String()
+	}
 }
 
 func buildID(f *elf.File) string {

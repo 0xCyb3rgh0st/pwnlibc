@@ -1,145 +1,520 @@
-# pwnlibc
+<div align="center">
 
-An all-in-one glibc version manager for CTF/pwn work: download, identify,
-diff, patch, and build glibc versions — inspired by
-[glibc-all-in-one](https://github.com/matrix1001/glibc-all-in-one), reimplemented
-from scratch in Go, and fully Dockerized so **you never need a Go toolchain
-installed locally**.
+<pre>
+                                  __  _ __
+    ____ _      ______  / /_(_) /_  _____
+   / __ \ | /| / / __ \/ __/ / __ \/ ___/
+  / /_/ / |/ |/ / / / / /_/ / /_/ / /__
+ / .___/|__/|__/_/ /_/\__/_/_.___/\___/
+/_/
+</pre>
 
+### A Docker-first glibc management toolkit for CTF and binary exploitation
+
+Download, identify, compare, patch, build, and reproduce glibc environments.
+
+[![CI](https://github.com/0xCyb3rgh0st/pwnlibc/actions/workflows/ci.yml/badge.svg)](https://github.com/0xCyb3rgh0st/pwnlibc/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/0xCyb3rgh0st/pwnlibc?include_prereleases)](https://github.com/0xCyb3rgh0st/pwnlibc/releases)
+[![Docker](https://img.shields.io/badge/container-GHCR-blue)](https://github.com/0xCyb3rgh0st/pwnlibc/pkgs/container/pwnlibc)
+[![License](https://img.shields.io/github/license/0xCyb3rgh0st/pwnlibc)](LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/0xCyb3rgh0st/pwnlibc)](go.mod)
+
+</div>
+
+> [!IMPORTANT]
+> `pwnlibc` targets glibc and Linux ELF workflows. Windows users should use Docker Desktop (Linux containers) or WSL2 — there is no native Windows binary support for `patch`/`run`/`build`, which depend on Linux-only tooling (`patchelf`, Docker, ELF interpreters).
+
+## Table of contents
+
+- [Quick demonstration](#quick-demonstration)
+- [Why pwnlibc?](#why-pwnlibc)
+- [Features](#features)
+- [Supported commands](#supported-commands)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Docker usage](#docker-usage)
+- [Standalone binary usage](#standalone-binary-usage)
+- [Local Docker-based build](#local-docker-based-build)
+- [Local release build](#local-release-build)
+- [Command examples](#command-examples)
+- [How identification works](#how-identification-works)
+- [How patching works](#how-patching-works)
+- [Architecture](#architecture)
+- [Supported platforms](#supported-platforms)
+- [Release process](#release-process)
+- [Security and provenance](#security-and-provenance)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+## Quick demonstration
+
+Both transcripts below are real output, captured from the built image
+against an actual downloaded glibc 2.31.
+
+```console
+$ pwnlibc identify libs/2.31-0ubuntu9.18/amd64/libc.so.6
+╭─ glibc identification
+│ File         libs/2.31-0ubuntu9.18/amd64/libc.so.6
+│ Architecture x86_64
+│ BuildID      5792732f783158c66fb4f3756458ca24e46e827d
+│ Version      2.31-0ubuntu9.18_amd64
+│ Method       buildid_local
+│ Confidence   exact
+╰─ Match confirmed
 ```
-./pwnlibc.ps1 download 2.31-0ubuntu9.9_amd64
-./pwnlibc.ps1 patch workdir/chall
-./pwnlibc.ps1 identify workdir/libc.so.6
+
+```console
+$ pwnlibc patch workdir/challenge
+[*] Inspecting ELF binary
+[+] Required glibc identified: 2.31-0ubuntu9.18_amd64
+[+] Dynamic loader available locally
+[+] RPATH updated
+[+] Interpreter updated
+[+] Patched binary: workdir/challenge_patched
 ```
 
-## Why a rewrite
+`patch` auto-detects the required glibc from a `libc.so.6` (or similarly
+named file) sitting next to the binary — the same convention most CTF
+challenges ship in. If none is found, pass `--version` explicitly (see
+[How patching works](#how-patching-works)).
 
-The original tool is a great reference implementation, but it shells out to
-`pyelftools`/`readelf`, downloads sequentially with no checksum verification,
-and requires a local Python environment. This project is a clean-room
-reimplementation of the same *idea* — not a port of its code — built around:
+## Why pwnlibc?
 
-- **No local toolchain, ever.** Everything — build, test, lint, run — happens
-  through Docker. `go build` never runs on your machine.
-- **Reliability.** SHA256-verified downloads, path-traversal/zip-slip-safe
-  extraction, decompression-bomb caps, retrying mirrors with a per-session
-  circuit breaker, and a `PROVENANCE.json` audit trail per downloaded version.
-- **Performance.** Native Go `debug/elf` parsing (no subprocess calls),
-  concurrent mirror racing, and a local `bbolt` index for O(1) lookups.
-- **A few extra tools** the original doesn't have: `patch` (pwninit-style
-  auto-patch), `run` (disposable repro container with gdb), `bundle`
-  (air-gapped export/import), `vuln` (known-CVE lookup), `doctor`
-  (environment self-check).
+[glibc-all-in-one](https://github.com/matrix1001/glibc-all-in-one) is a great
+reference implementation, but it shells out to `pyelftools`/`readelf`,
+downloads sequentially with no checksum verification, and needs a local
+Python environment. `pwnlibc` is a clean-room reimplementation of the same
+*idea* — not a port of its code — built around three things:
 
-## Install
+- **No local toolchain, ever.** Build, test, lint, and run all happen through
+  Docker. `go build` never has to run on your machine.
+- **Reliability.** SHA-256 recorded per download, path-traversal/zip-slip-safe
+  extraction, decompression-bomb caps, a per-session mirror circuit breaker,
+  and a `PROVENANCE.json` audit trail for every version you pull.
+- **Performance.** Native Go `debug/elf` parsing (no subprocess calls to
+  `nm`/`readelf`), concurrent mirror racing, and a local `bbolt` index for
+  O(1) repeat lookups.
 
-Three ways to get `pwnlibc`, in order of how much you want Docker to manage
-for you:
+## Features
 
-### 1. Docker (recommended — no local Go, `patchelf`, or Docker toolchain juggling)
+| Feature | Description |
+|---|---|
+| Mirror | Synchronise available glibc package metadata across four Ubuntu mirrors |
+| Search | Search glibc versions, local symbols, and reverse symbol/BuildID matches |
+| Download | Download Ubuntu glibc packages with recorded checksums and provenance |
+| Identify | Detect glibc via BuildID (local index or libc.rip) or symbol-offset fingerprinting |
+| Diff | Compare symbols and security attributes (RELRO/NX/Canary/PIE/RUNPATH) between versions |
+| Build | Build glibc from source inside a period-correct Ubuntu container |
+| Vuln | Show curated known-CVE information for a version |
+| Patch | Patch an ELF's interpreter and RPATH, pwninit-style |
+| Run | Reproduce a challenge inside a disposable container with gdb |
+| Bundle | Package the local glibc cache for air-gapped transport |
+| Doctor | Check Docker reachability, disk space, mirror reachability, and index health |
+
+## Supported commands
+
+| Command | Purpose |
+|---|---|
+| [`mirror`](#command-examples) | Update or list mirror metadata |
+| [`search`](#command-examples) | Search available glibc packages, local symbols, or libc.rip |
+| [`download`](#command-examples) | Download and record a glibc package |
+| [`identify`](#how-identification-works) | Identify a glibc file |
+| [`diff`](#command-examples) | Compare two glibc versions |
+| [`build`](#command-examples) | Build glibc inside Docker |
+| [`vuln`](#command-examples) | Show curated vulnerability information |
+| [`patch`](#how-patching-works) | Patch an ELF binary |
+| [`run`](#command-examples) | Start a disposable reproduction environment |
+| [`bundle`](#command-examples) | Create or restore a portable glibc bundle |
+| [`doctor`](#command-examples) | Check required tools and configuration |
+| `version` | Print the pwnlibc version |
+| `banner` | Print the pwnlibc banner |
+
+Every command supports `--json` for scripting, and `--no-color`/`--no-banner`
+for plain output.
+
+## Installation
+
+### Docker (recommended)
+
+Recommended for Windows, Linux, and anyone who doesn't want local
+dependencies — `patchelf` and the tooling `build`/`run` need ship inside the
+image.
+
+```bash
+docker pull ghcr.io/0xcyb3rgh0st/pwnlibc:latest
+docker run --rm ghcr.io/0xcyb3rgh0st/pwnlibc:latest version
+```
+
+Day-to-day usage goes through the wrapper scripts instead of raw `docker run`
+— see [Quick start](#quick-start).
+
+### Standalone binary (Linux / macOS)
+
+Every tagged release publishes cross-compiled archives (Linux/macOS,
+amd64/arm64) with checksums to
+[GitHub Releases](https://github.com/0xCyb3rgh0st/pwnlibc/releases). Download
+the archive for your platform, extract it, and run the binary directly.
+`patch` needs `patchelf` on your `PATH`; `build`/`run` need a local Docker
+daemon — neither ships inside a bare binary.
+
+> [!WARNING]
+> There is no native Windows binary. `patch`/`run`/`build` depend on Linux
+> ELF tooling and Docker-in-Docker; use the Docker image or WSL2 on Windows.
+
+### `go install`
+
+```bash
+go install github.com/0xCyb3rgh0st/pwnlibc/cmd/pwnlibc@latest
+```
+
+Same caveat as the standalone binaries: `patchelf`/`docker` need to already
+be on your machine for `patch`/`build`/`run`.
+
+## Quick start
 
 ```sh
 git clone https://github.com/0xCyb3rgh0st/pwnlibc.git
 cd pwnlibc
 ./pwnlibc.sh mirror update          # or ./pwnlibc.ps1 on Windows
-./pwnlibc.sh download 2.31-0ubuntu9.9_amd64
-./pwnlibc.sh identify libs/2.31-0ubuntu9.9/amd64/libc.so.6
+./pwnlibc.sh download 2.31-0ubuntu9.18_amd64
+./pwnlibc.sh identify libs/2.31-0ubuntu9.18/amd64/libc.so.6
 ```
 
-### 2. Prebuilt binary (GitHub Releases)
-
-Every tagged version is cross-compiled for linux/darwin/windows (amd64 +
-arm64) by CI ([`.goreleaser.yml`](.goreleaser.yml), driven by the
-`release-binaries` job in [`.github/workflows/ci.yml`](.github/workflows/ci.yml))
-and attached to that tag's [GitHub Release](https://github.com/0xCyb3rgh0st/pwnlibc/releases)
-as ready-to-run archives — download the one for your OS/arch, extract, and
-run `pwnlibc`. These are plain binaries: `patch` needs `patchelf` on your
-PATH and `build`/`run` need a local Docker daemon, since neither is bundled
-outside the container image.
-
-### 3. `go install` (if you already have Go)
-
-```sh
-go install github.com/0xCyb3rgh0st/pwnlibc/cmd/pwnlibc@latest
-```
-
-Same caveat as the prebuilt binaries: `patch`/`build`/`run` expect
-`patchelf`/`docker` to already be on your machine.
-
-The first Docker run builds the `pwnlibc:latest` image; after that, every command is
-just `docker compose run --rm cli <args>` under the hood. Downloaded glibc
+The first run builds the `pwnlibc:latest` image; after that, every command is
+`docker compose run --rm cli <args>` under the hood. Downloaded glibc
 versions land in `./libs`, persisted on the host. Drop challenge binaries
 into `./workdir` before running `patch`/`run` against them — those two
-commands launch *nested* containers via the host Docker socket, and can only
-reach files under `./libs` or `./workdir` (see "How `build`/`run` work" below).
+commands launch *nested* containers via the host Docker socket and can only
+reach files under `./libs` or `./workdir` (see
+[Architecture](#architecture)).
 
-## Commands
+## Docker usage
 
-| Command | What it does |
-|---|---|
-| `mirror list` / `mirror update` | List/refresh the apt mirrors (tuna, ustc, ubuntu-archive, old-releases, plus any custom ones from config). |
-| `search <query>` | Fuzzy-search available versions. |
-| `search --libc <path> --symbol <name\|glob>` | Local symbol offset lookup / glob match. |
-| `search --libc <path> --ends-with <hex>` | Symbols whose offset ends in a given hex suffix (partial-overwrite gadget hunting). |
-| `search --libc <path> --str <string>` | Scan `.rodata`/`.data` for a string. |
-| `search --symbol name=addr [--symbol ...] [--tol N]` | Reverse lookup via libc.rip. |
-| `search --buildid <hash>` | BuildID lookup (local index, then libc.rip). |
-| `download <version>_<arch>` | Download + extract a glibc version, with checksum verification, provenance manifest, and automatic local indexing. |
-| `identify <file> [--offline]` | Identify a glibc version via BuildID or anchor-symbol fingerprint. |
-| `diff <a> <b>` | Symbol + security-attribute (RELRO/NX/Canary/PIE/RUNPATH) diff. |
-| `patch <binary> [--version ...]` | pwninit-style: auto-detect, download, and patch interpreter+RPATH. |
-| `run <binary> [--version ...]` | Patch (unless `--no-patch`) and drop into gdb inside a matching Ubuntu container. |
-| `build <version> <arch>` | Compile glibc from source inside the period-correct Ubuntu image. |
-| `vuln <version>` | Known CVEs affecting a version (curated, best-effort — cross-check NVD). |
-| `bundle export/import` | Pack/unpack the whole `libs/` cache for air-gapped use. |
-| `doctor` | Self-check: Docker reachability, disk space, mirror reachability, index health. |
+Linux / macOS:
 
-Every command supports `--json` for scripting.
-
-## How `build`/`run` work (Docker-in-Docker)
-
-`build` and `run` launch *nested* containers by shelling out to `docker run`
-against the host's Docker daemon. Two consequences:
-
-1. They need the Docker socket, which is **opt-in** via the `build-src`
-   compose profile (`pwnlibc.sh`/`pwnlibc.ps1` route these two subcommands
-   there automatically). Socket access is equivalent to root on the host —
-   only grant it if you're comfortable with that.
-2. Bind-mount paths for the nested container are resolved by the *host*
-   daemon, not pwnlibc's own container filesystem — so only paths under
-   `./libs` and `./workdir` are reachable (the compose file exports
-   `HOST_LIBS_DIR`/`HOST_WORKDIR_DIR` so pwnlibc can translate between the
-   two). This is why challenge binaries need to live in `./workdir`.
-
-## Configuration
-
-Optional `config.yaml`, passed via `--config`:
-
-```yaml
-libs_dir: /data/libs
-mirror_priority: ["ustc", "tuna"]
-custom_mirrors:
-  - name: corp-mirror
-    base_url: https://mirror.corp.internal/ubuntu
-max_retries: 5
+```bash
+docker run --rm \
+  -v "$(pwd):/work" \
+  ghcr.io/0xcyb3rgh0st/pwnlibc:latest \
+  identify /work/libc.so.6
 ```
 
-## Development (still no local Go needed)
+Windows PowerShell:
 
-```sh
-make test     # go vet + go test, in a container
-make lint     # golangci-lint, in a container
-make build    # build the pwnlibc:latest image
+```powershell
+docker run --rm `
+  -v "${PWD}:/work" `
+  ghcr.io/0xcyb3rgh0st/pwnlibc:latest `
+  identify /work/libc.so.6
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same containerized test/lint steps,
-then a Trivy vulnerability scan on the final image, and publishes multi-arch
-(amd64/arm64) images to GHCR on tagged releases.
+For anything beyond a single one-shot command (i.e. everyday use), prefer the
+`pwnlibc.sh`/`pwnlibc.ps1` wrappers from [Quick start](#quick-start) — they
+handle the `./libs`/`./workdir` volume mounts and the `build-src` profile for
+you.
 
-## Notes
+## Standalone binary usage
 
-- The `vuln` database is a small, hand-curated list of well-known CVEs, not
-  an authoritative feed — always cross-check against the NVD before relying
-  on it for anything beyond "does this ring a bell."
-- This is an independent reimplementation for CTF/security-research use; it
-  is not affiliated with the upstream `glibc-all-in-one` project.
+```bash
+tar xzf pwnlibc_<version>_linux_amd64.tar.gz
+./pwnlibc doctor
+./pwnlibc identify ./libc.so.6
+```
+
+## Local Docker-based build
+
+```bash
+git clone https://github.com/0xCyb3rgh0st/pwnlibc.git
+cd pwnlibc
+make build   # docker compose build cli
+make test    # go vet + go test, in a container
+make lint    # golangci-lint, in a container
+```
+
+Only Docker and Git are required — this is the same containerized workflow
+CI uses.
+
+## Local release build
+
+Cross-compiling the release archives locally (what CI's `release-binaries`
+job runs) uses [GoReleaser](https://goreleaser.com/) via Docker, so it still
+doesn't need a local Go install:
+
+```bash
+docker run --rm -v "$(pwd):/src" -w /src goreleaser/goreleaser:latest \
+  release --snapshot --clean --skip=publish
+```
+
+Artifacts land in `./dist/`.
+
+## Command examples
+
+Every transcript below is real output captured from the built image, not
+hand-typed.
+
+```console
+$ pwnlibc mirror update
+[*] Refreshing mirrors
+[+] Indexed 1967 packages across 4 mirrors
+```
+
+```console
+$ pwnlibc search 2.31
+2.31-0ubuntu9_amd64          arch=amd64    mirrors=tuna,ustc,ubuntu-archive
+2.31-0ubuntu9_i386           arch=i386     mirrors=tuna,ustc,ubuntu-archive
+2.31-0ubuntu9.18_amd64       arch=amd64    mirrors=tuna,ustc,ubuntu-archive
+2.31-0ubuntu9.18_i386        arch=i386     mirrors=tuna,ustc,ubuntu-archive
+```
+
+```console
+$ pwnlibc download 2.31-0ubuntu9.18_amd64
+[*] Searching Ubuntu package mirrors
+[>] Package: libc6_2.31-0ubuntu9.18_amd64.deb
+[+] Package downloaded (mirror: ubuntu-archive)
+[+] SHA-256 recorded: 1b2281aac4935dfea1f89dfc19e445fdbb45303202af60679ccb8bf035f081a0
+[+] Package extracted safely
+[+] Debug symbols included
+[+] Indexed BuildID: 5792732f783158c66fb4f3756458ca24e46e827d
+[+] Provenance written to PROVENANCE.json
+[+] glibc 2.31-0ubuntu9.18_amd64 ready at /data/libs/2.31-0ubuntu9.18/amd64
+```
+
+A progress bar (`Downloading libc6_...deb [####----] 55%`) appears on
+`stderr` when connected to an interactive terminal; it's a no-op (and never
+appears) for piped/redirected output, `--json`, or CI logs, which is why it
+isn't in this transcript.
+
+```console
+$ pwnlibc diff libs/2.31-0ubuntu9.18/amd64/libc.so.6 libs/2.35-0ubuntu3.13/amd64/libc.so.6
+[i] libs/2.31-0ubuntu9.18/amd64/libc.so.6 -> libs/2.35-0ubuntu3.13/amd64/libc.so.6
+[i] +460 symbols added, -21 removed, ~2264 moved
+  moved symbols:
+    sigprocmask                      0x432c0 -> 0x42710
+    xdr_bytes                        0x1568d0 -> 0x16bcf0
+    __free_hook                      0x1eee48 -> 0x2214a8
+    ...
+```
+
+```console
+$ pwnlibc vuln 2.31-0ubuntu9.18
+[i] CVE-2021-3326                            severity=low
+    Assertion failure (DoS) in iconv when processing crafted ISO-2022-JP-3 sequences.
+[!] CVE-2022-23218                           severity=high
+    Buffer overflow in sunrpc svcunix_create() via long pathname (legacy sunrpc compat code).
+[!] CVE-2022-23219                           severity=high
+    Stack buffer overflow in sunrpc clnt_create() via overly long name.
+[i] CVE-2024-2961                            severity=medium
+    Out-of-bounds write in the iconv ISO-2022-CN-EXT conversion module.
+[!] CVE-2024-33599                           severity=high
+    Stack buffer overflow in nscd when processing a long netgroup name.
+```
+
+```console
+$ pwnlibc doctor
+[+] libs-dir         /data/libs
+[+] cache-dir        /home/pwnlibc/.cache/pwnlibc
+[+] disk-space       93744.4 MiB free
+[+] mirrors          4/4 reachable
+[+] local-index      2 versions indexed
+[-] docker-socket    not reachable (only needed for `build`/`run`): ...
+```
+
+`docker-socket not reachable` is expected here — the default `cli` service
+doesn't mount the Docker socket; only `build`/`run` need it, via the
+`build-src` profile (see [Troubleshooting](#troubleshooting)).
+
+## How identification works
+
+```mermaid
+flowchart LR
+    A[ELF Binary or libc.so.6] --> B[pwnlibc]
+    B --> C{Identification}
+    C -->|BuildID present| D[Local BuildID Index]
+    D -->|no match| E[libc.rip lookup]
+    C -->|BuildID stripped| F[Symbol Offset Fingerprint]
+    D -->|match| G[Matched glibc]
+    E --> G
+    F --> G
+    G --> H[Download]
+    G --> I[Patch]
+    G --> J[Run]
+    G --> K[Bundle]
+```
+
+`identify` tries, in order: an exact match of the file's `NT_GNU_BUILD_ID`
+note against the local `bbolt` index; if that misses, the same BuildID
+against libc.rip (unless `--offline`); and if the BuildID itself is missing
+(stripped), it falls back to comparing a fixed set of anchor-symbol offsets
+(`system`, `printf`, `malloc`, ...) against every version in the local index,
+ranking candidates by how many anchors match exactly.
+
+## How patching works
+
+```mermaid
+flowchart TD
+    A[Challenge binary] --> B{--version given?}
+    B -->|no| C[Find co-located libc.so.6]
+    C --> D[Identify that libc file]
+    B -->|yes| E{Already downloaded?}
+    D --> E
+    E -->|no| F[Download + verify + index]
+    E -->|yes| G[Locate ld.so]
+    F --> G
+    G --> H[patchelf: set interpreter]
+    H --> I[patchelf: set RPATH]
+    I --> J[Patched binary]
+```
+
+Without `--version`, `patch` does **not** try to fingerprint the challenge
+binary itself — a regular executable's glibc-provided symbols (`system`,
+`malloc`, ...) are undefined imports in its own `.dynsym`, not exported
+definitions with real addresses, so there's nothing there to identify
+against. Instead it looks for a `libc.so.6` (or similarly named file) next
+to the binary — the convention most CTF challenges ship in — and identifies
+*that* file's BuildID/symbols. If no such file exists, pass `--version`
+explicitly.
+
+`patch` never modifies the original file — it copies the binary first, then
+rewrites the copy's `PT_INTERP` and `RPATH`/`RUNPATH` via `patchelf` so it
+loads the exact glibc it was identified against.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    A[Ubuntu Mirror] --> B[Download .deb]
+    B --> C[Record SHA-256]
+    C --> D[Safe ar/tar extraction]
+    D --> E[Store glibc files under libs/]
+    E --> F[Write PROVENANCE.json]
+    E --> G[Index BuildID + symbols in bbolt]
+```
+
+`pwnlibc` itself always runs inside a container (the `cli` service). `build`
+and `run` are the two exceptions that need to reach *outside* that container:
+they shell out to `docker run` against the **host** Docker daemon via the
+mounted socket (the `build-src` compose profile, opt-in since socket access
+is host-root-equivalent). Because that `docker run` call is resolved by the
+host daemon, bind-mount sources have to be host paths, not paths inside
+pwnlibc's own container — which is why `build`/`run` only work on files under
+`./libs` or `./workdir` (translated via the `HOST_LIBS_DIR`/`HOST_WORKDIR_DIR`
+environment variables the compose file sets).
+
+## Supported platforms
+
+| Environment | Status | Recommended method |
+|---|---:|---|
+| Linux amd64 | Fully supported | Docker or binary |
+| Linux arm64 | Fully supported | Docker or binary |
+| macOS amd64 | Binary only (Docker commands need Docker Desktop) | Binary |
+| macOS arm64 | Binary only (Docker commands need Docker Desktop) | Binary |
+| Windows | No native binary | Docker Desktop or WSL2 |
+
+"Binary only" means the plain Go binary runs fine, but `patch` needs
+`patchelf` installed separately and `build`/`run` need Docker — the container
+image is the only distribution that bundles both.
+
+## Release process
+
+Each tagged version (`vX.Y.Z`) produces two kinds of artifacts, both built by
+CI, never by hand:
+
+**Standalone binaries** (via [GoReleaser](.goreleaser.yml)):
+- Linux amd64/arm64, macOS amd64/arm64, Windows amd64/arm64 (Windows binaries
+  build but are unsupported for `patch`/`build`/`run` — see
+  [Supported platforms](#supported-platforms))
+- `checksums.txt` (SHA-256) alongside the archives
+
+**Docker images**:
+```text
+ghcr.io/0xcyb3rgh0st/pwnlibc:v0.1.0
+ghcr.io/0xcyb3rgh0st/pwnlibc:latest
+```
+
+Verify a downloaded binary against the published checksums:
+
+```bash
+sha256sum -c checksums.txt
+```
+
+## Security and provenance
+
+> [!WARNING]
+> Only run unknown challenge binaries inside an isolated container or VM.
+> `pwnlibc` is a version-management and patching tool, not a sandbox — the
+> `run` command launches a disposable container for convenience, but that
+> container still executes the binary.
+
+`pwnlibc` is built for authorised CTF challenges, security research,
+education, and glibc compatibility testing.
+
+Every `download` writes a `PROVENANCE.json` next to the extracted files:
+
+```json
+{
+  "version": "2.31-0ubuntu9.18",
+  "arch": "amd64",
+  "mirror_name": "ubuntu-archive",
+  "source_url": "http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/libc6_2.31-0ubuntu9.18_amd64.deb",
+  "sha256": "1b2281aac4935dfea1f89dfc19e445fdbb45303202af60679ccb8bf035f081a0",
+  "deb_filename": "libc6_2.31-0ubuntu9.18_amd64.deb",
+  "downloaded_at": "2026-07-11T05:55:47.955368471Z",
+  "tool_version": "v0.1.0",
+  "debug_included": true
+}
+```
+
+That gives you: which mirror served the file, the exact source URL, the
+package's filename and version, a SHA-256 computed at download time (recorded
+for integrity/audit — see the note in [Command examples](#command-examples)
+about why this isn't checked against a third-party value), when it was
+fetched, and whether debug symbols came with it. The schema may grow
+additional fields over time; treat unknown fields as forward-compatible.
+
+## Troubleshooting
+
+**`docker-socket not reachable` from `doctor`** — expected unless you're
+running `build`/`run`; only the `build-src` compose profile mounts the
+socket. Not a failure for normal `download`/`identify`/`patch` usage.
+
+**`build`/`run` can't find my file** — it needs to live under `./workdir` on
+the host (bind-mounted to `/data/workdir`); see
+[Architecture](#architecture) for why.
+
+**Colors look wrong in my CI logs** — they shouldn't appear at all: pwnlibc
+disables color automatically for non-interactive output, and the banner is
+suppressed in CI (`CI` env var), for `--json`, and for redirected output. Use
+`--no-color`/`NO_COLOR=1` to force it off anywhere else.
+
+**`patch` fails with "cannot find section '.interp'"** — the target binary
+is statically linked (no dynamic loader to patch); `patch` only applies to
+dynamically-linked ELF binaries.
+
+## Contributing
+
+```bash
+git clone https://github.com/0xCyb3rgh0st/pwnlibc.git
+cd pwnlibc
+
+make test
+make lint
+make build
+```
+
+Only Docker and Git are required for the full Docker-first development
+workflow — no local Go toolchain needed to contribute.
+
+## License
+
+[MIT](LICENSE)
+
+## Acknowledgements
+
+`pwnlibc` is an independent reimplementation inspired by
+[glibc-all-in-one](https://github.com/matrix1001/glibc-all-in-one); it is not
+affiliated with that project. The `vuln` database is a small, hand-curated
+list of well-known CVEs, not an authoritative feed — always cross-check
+against the NVD before relying on it for anything beyond "does this ring a
+bell."

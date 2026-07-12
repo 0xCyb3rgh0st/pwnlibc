@@ -10,6 +10,7 @@ import (
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/patcher"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newRunCmd() *cobra.Command {
@@ -87,7 +88,7 @@ func newRunCmd() *cobra.Command {
 				"apt-get update -qq >/dev/null && apt-get install -y -qq gdb >/dev/null && exec gdb ./" + filepath.Base(target),
 			}
 
-			fmt.Fprintf(os.Stderr, "launching %s (glibc %s)...\n", image, versionArch)
+			ui.FprintStep(os.Stderr, "Launching %s (glibc %s)", ui.Cyan(image), ui.Cyan(versionArch))
 			dcmd := exec.CommandContext(cmd.Context(), "docker", dockerArgs...)
 			dcmd.Stdin, dcmd.Stdout, dcmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 			return dcmd.Run()

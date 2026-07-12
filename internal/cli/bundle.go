@@ -1,11 +1,10 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/bundle"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newBundleCmd() *cobra.Command {
@@ -28,7 +27,7 @@ func newBundleExportCmd() *cobra.Command {
 				return err
 			}
 			app.EmitResult(map[string]interface{}{"dest": args[0], "files": count}, func() {
-				fmt.Printf("exported %d files -> %s\n", count, args[0])
+				ui.FprintSuccess(cmd.OutOrStdout(), "Exported %d files -> %s", count, ui.Cyan(args[0]))
 			})
 			return nil
 		},
@@ -46,7 +45,7 @@ func newBundleImportCmd() *cobra.Command {
 				return err
 			}
 			app.EmitResult(map[string]interface{}{"src": args[0], "files": len(written)}, func() {
-				fmt.Printf("imported %d files -> %s\n", len(written), app.Config.LibsDir)
+				ui.FprintSuccess(cmd.OutOrStdout(), "Imported %d files -> %s", len(written), ui.Cyan(app.Config.LibsDir))
 			})
 			return nil
 		},

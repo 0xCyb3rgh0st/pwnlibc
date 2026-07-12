@@ -14,6 +14,7 @@ import (
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/index"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/jsonout"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/mirrors"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 // Version is set via -ldflags at build time.
@@ -49,14 +50,27 @@ func (a *App) EmitError(err error) {
 		_ = jsonout.EmitError(os.Stdout, jsonout.CodeOf(err), err)
 		return
 	}
-	fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	ui.FprintError(os.Stderr, "%v", err)
 }
 
 var (
 	app        = &App{}
 	cfgPath    string
 	jsonOutput bool
+	noColor    bool
+	noBanner   bool
 )
+
+// applyUIFlags pushes --no-color into the ui package. It's called from both
+// PersistentPreRunE (the normal command path) and the custom help function
+// (which Cobra reaches via a separate path that skips PersistentPreRunE
+// entirely for --help), since both need it and neither alone covers both
+// invocation shapes. Flags are already parsed by the time either runs.
+func applyUIFlags() {
+	if noColor {
+		ui.SetColorEnabled(false)
+	}
+}
 
 // NewRootCmd builds the full pwnlibc command tree.
 func NewRootCmd() *cobra.Command {
@@ -68,6 +82,7 @@ func NewRootCmd() *cobra.Command {
 		SilenceErrors: true,
 		Version:       Version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			applyUIFlags()
 			cfg, err := config.Load(cfgPath)
 			if err != nil {
 				return fmt.Errorf("loading config: %w", err)
@@ -88,6 +103,35 @@ func NewRootCmd() *cobra.Command {
 
 	root.PersistentFlags().StringVar(&cfgPath, "config", "", "path to config.yaml (default: none, built-in defaults)")
 	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "emit machine-readable JSON instead of human-readable output")
+	root.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output (also honors the NO_COLOR env var)")
+	root.PersistentFlags().BoolVar(&noBanner, "no-banner", false, "never print the banner, even on an interactive terminal")
+
+	// Cobra reaches this for both `pwnlibc --help`/`-h` and bare `pwnlibc`
+	// (a non-runnable root with subcommands falls back to help), and -- since
+	// it's inherited by every child that doesn't set its own -- also for
+	// `pwnlibc <subcommand> --help`. Flags are already parsed by the time
+	// Cobra calls this, even on the --help path where PersistentPreRunE is
+	// skipped entirely -- see applyUIFlags.
+	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		applyUIFlags()
+		out := cmd.OutOrStdout()
+		// Only the bare root command shows the banner ("pwnlibc" or
+		// "pwnlibc --help") -- not every subcommand's --help, which would
+		// get noisy fast across a dozen commands.
+		if cmd.Parent() == nil && ui.ShouldShowBanner(out, ui.BannerOptions{JSON: jsonOutput, NoBanner: noBanner}) {
+			ui.PrintBanner(out)
+		}
+		if s := cmd.Long; s != "" {
+			fmt.Fprintln(out, s)
+			fmt.Fprintln(out)
+		} else if s := cmd.Short; s != "" {
+			fmt.Fprintln(out, s)
+			fmt.Fprintln(out)
+		}
+		if cmd.Runnable() || cmd.HasSubCommands() {
+			fmt.Fprintln(out, cmd.UsageString())
+		}
+	})
 
 	root.AddCommand(
 		newMirrorCmd(),
@@ -102,6 +146,8 @@ func NewRootCmd() *cobra.Command {
 		newBundleCmd(),
 		newDoctorCmd(),
 		newCompletionCmd(),
+		newBannerCmd(),
+		newVersionCmd(),
 	)
 	return root
 }

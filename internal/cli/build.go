@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newBuildCmd() *cobra.Command {
@@ -45,7 +46,7 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "building glibc %s (%s) using %s -- this can take a long time\n", version, arch, image)
+			ui.FprintStep(os.Stderr, "Building glibc %s (%s) using %s -- this can take a long time", ui.Cyan(version), arch, ui.Cyan(image))
 
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 			defer cancel()
@@ -59,7 +60,7 @@ func newBuildCmd() *cobra.Command {
 			app.EmitResult(map[string]interface{}{
 				"version": version, "arch": arch, "image": image, "out_dir": outDir,
 			}, func() {
-				fmt.Printf("built glibc %s (%s) -> %s\n", version, arch, outDir)
+				ui.FprintSuccess(os.Stdout, "Built glibc %s (%s) -> %s", ui.Cyan(version), arch, ui.Cyan(outDir))
 			})
 			return nil
 		},

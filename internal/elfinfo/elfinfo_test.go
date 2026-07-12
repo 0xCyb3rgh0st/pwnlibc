@@ -23,10 +23,31 @@ func selfELF(t *testing.T) (*Info, *elf.File) {
 	return info, f
 }
 
+func TestArchName(t *testing.T) {
+	cases := []struct {
+		m    elf.Machine
+		want string
+	}{
+		{elf.EM_X86_64, "x86_64"},
+		{elf.EM_386, "i386"},
+		{elf.EM_AARCH64, "aarch64"},
+		{elf.EM_ARM, "arm"},
+	}
+	for _, c := range cases {
+		if got := archName(c.m); got != c.want {
+			t.Errorf("archName(%v) = %q, want %q", c.m, got, c.want)
+		}
+	}
+}
+
 func TestLoadSelf(t *testing.T) {
 	info, _ := selfELF(t)
 	if info.Type == "" {
 		t.Error("expected non-empty ELF type")
+	}
+	// The test container always runs on x86_64.
+	if info.Arch != "x86_64" {
+		t.Errorf("got Arch %q, want %q (raw EM_X86_64-style names should be mapped to conventional names)", info.Arch, "x86_64")
 	}
 	if info.Arch == "" {
 		t.Error("expected non-empty arch")

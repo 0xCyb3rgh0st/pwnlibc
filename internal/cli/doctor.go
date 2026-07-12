@@ -10,6 +10,7 @@ import (
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/buildsrc"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/mirrors"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 // Check is one doctor diagnostic result.
@@ -33,11 +34,12 @@ func newDoctorCmd() *cobra.Command {
 			}
 			app.EmitResult(map[string]interface{}{"ok": allOK, "checks": checks}, func() {
 				for _, c := range checks {
-					status := "OK  "
-					if !c.OK {
-						status = "FAIL"
+					name := fmt.Sprintf("%-16s", c.Name)
+					if c.OK {
+						fmt.Println(ui.Success("%s %s", name, c.Detail))
+					} else {
+						fmt.Println(ui.Error("%s %s", name, c.Detail))
 					}
-					fmt.Printf("[%s] %-24s %s\n", status, c.Name, c.Detail)
 				}
 			})
 			if !allOK {

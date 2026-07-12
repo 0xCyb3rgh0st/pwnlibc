@@ -10,6 +10,7 @@ import (
 
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/fetch"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newMirrorCmd() *cobra.Command {
@@ -42,7 +43,11 @@ func newMirrorListCmd() *cobra.Command {
 					if r.Fallback {
 						kind = "fallback"
 					}
-					fmt.Printf("%-16s %-8s %s\n", r.Name, kind, r.BaseURL)
+					// Pad the plain name to width first, then colorize --
+					// coloring before padding would count invisible ANSI
+					// bytes toward the field width and misalign columns.
+					name := fmt.Sprintf("%-16s", r.Name)
+					fmt.Printf("%s %-8s %s\n", ui.Cyan(name), kind, r.BaseURL)
 				}
 			})
 			return nil
@@ -55,6 +60,9 @@ func newMirrorUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Refresh the aggregated package list from all configured mirrors",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !app.JSON {
+				ui.FprintStep(cmd.OutOrStdout(), "Refreshing mirrors")
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
@@ -91,9 +99,10 @@ func newMirrorUpdateCmd() *cobra.Command {
 				"packages_indexed": len(merged),
 				"mirror_errors":    errs,
 			}, func() {
-				fmt.Printf("indexed %d packages across %d mirrors\n", len(merged), len(app.Registry.All())-len(errs))
+				ui.FprintSuccess(cmd.OutOrStdout(), "Indexed %s packages across %d mirrors",
+					ui.Cyan(fmt.Sprintf("%d", len(merged))), len(app.Registry.All())-len(errs))
 				for _, e := range errs {
-					fmt.Printf("  warning: %s\n", e)
+					ui.FprintWarn(cmd.OutOrStdout(), "%s", e)
 				}
 			})
 			return nil

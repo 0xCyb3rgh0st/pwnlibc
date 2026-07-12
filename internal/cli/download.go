@@ -16,6 +16,7 @@ import (
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/fetch"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 // triplets maps a Debian arch name to its multiarch library directory
@@ -85,18 +86,39 @@ func runDownload(versionArch, mirrorName string, keepDeb, wantDbg bool) error {
 		return err
 	}
 
-	mainResult, err := downloadAndExtractDeb(ctx, *main, mirrorName, destDir, keepDeb, libFilter(triplet))
+	human := !app.JSON
+	if human {
+		ui.FprintStep(os.Stdout, "Searching Ubuntu package mirrors")
+		ui.FprintAction(os.Stdout, "Package: %s", ui.Cyan(main.Filename))
+	}
+
+	mainResult, err := downloadAndExtractDeb(ctx, *main, mirrorName, destDir, keepDeb, libFilter(triplet), human)
 	if err != nil {
 		return fmt.Errorf("downloading %s: %w", main.Filename, err)
+	}
+	if human {
+		ui.FprintSuccess(os.Stdout, "Package downloaded (mirror: %s)", ui.Cyan(mainResult.MirrorName))
+		// We compute and record this hash ourselves rather than checking it
+		// against a third-party value: Ubuntu's apt Packages index only
+		// lists checksums for the currently-active release, not the
+		// historical versions the pool directory still serves, so there's
+		// no authoritative source to verify against for most downloads.
+		ui.FprintSuccess(os.Stdout, "SHA-256 recorded: %s", ui.Cyan(mainResult.SHA256))
+		ui.FprintSuccess(os.Stdout, "Package extracted safely")
 	}
 
 	debugIncluded := false
 	if wantDbg && dbg != nil {
-		if _, err := downloadAndExtractDeb(ctx, *dbg, mirrorName, filepath.Join(destDir, ".debug"), keepDeb, debugFilter()); err != nil {
+		if _, err := downloadAndExtractDeb(ctx, *dbg, mirrorName, filepath.Join(destDir, ".debug"), keepDeb, debugFilter(), false); err != nil {
 			// Debug symbols are a bonus, not fatal to the core download.
-			fmt.Fprintf(os.Stderr, "warning: failed to download debug symbols: %v\n", err)
+			if human {
+				ui.FprintWarn(os.Stderr, "failed to download debug symbols: %v", err)
+			}
 		} else {
 			debugIncluded = true
+			if human {
+				ui.FprintSuccess(os.Stdout, "Debug symbols included")
+			}
 		}
 	}
 
@@ -119,6 +141,9 @@ func runDownload(versionArch, mirrorName string, keepDeb, wantDbg bool) error {
 	if err := idx.IndexVersion(versionArch, info.BuildID, symbols); err != nil {
 		return fmt.Errorf("indexing downloaded version: %w", err)
 	}
+	if human && info.BuildID != "" {
+		ui.FprintSuccess(os.Stdout, "Indexed BuildID: %s", ui.Cyan(info.BuildID))
+	}
 
 	prov := Provenance{
 		Version: main.Version, Arch: main.Arch, MirrorName: mainResult.MirrorName,
@@ -129,6 +154,9 @@ func runDownload(versionArch, mirrorName string, keepDeb, wantDbg bool) error {
 	if err := os.WriteFile(app.Paths.ProvenanceFile(main.Version, main.Arch), provData, 0o644); err != nil {
 		return fmt.Errorf("writing provenance manifest: %w", err)
 	}
+	if human {
+		ui.FprintSuccess(os.Stdout, "Provenance written to %s", ui.Cyan("PROVENANCE.json"))
+	}
 
 	app.EmitResult(map[string]interface{}{
 		"version_arch":   versionArch,
@@ -138,20 +166,14 @@ func runDownload(versionArch, mirrorName string, keepDeb, wantDbg bool) error {
 		"debug_included": debugIncluded,
 		"provenance":     prov,
 	}, func() {
-		fmt.Printf("downloaded %s -> %s\n", versionArch, destDir)
-		fmt.Printf("  mirror: %s\n", mainResult.MirrorName)
-		fmt.Printf("  sha256: %s\n", mainResult.SHA256)
-		if info.BuildID != "" {
-			fmt.Printf("  build-id: %s\n", info.BuildID)
-		}
-		fmt.Printf("  debug symbols: %v\n", debugIncluded)
+		ui.FprintSuccess(os.Stdout, "glibc %s ready at %s", ui.Cyan(versionArch), ui.Cyan(destDir))
 	})
 	return nil
 }
 
 func cliVersion() string { return Version }
 
-func downloadAndExtractDeb(ctx context.Context, pkg packages.Package, mirrorName, destDir string, keepDeb bool, filter archive.FilterFunc) (*fetch.Result, error) {
+func downloadAndExtractDeb(ctx context.Context, pkg packages.Package, mirrorName, destDir string, keepDeb bool, filter archive.FilterFunc, showProgress bool) (*fetch.Result, error) {
 	candidates := buildCandidates(pkg, mirrorName)
 	if len(candidates) == 0 {
 		return nil, fmt.Errorf("no mirrors known to host %s (restricted to %q?)", pkg.Filename, mirrorName)
@@ -161,6 +183,18 @@ func downloadAndExtractDeb(ctx context.Context, pkg packages.Package, mirrorName
 	opts := fetch.Options{
 		Timeout:    time.Duration(app.Config.DownloadTimeoutSeconds) * time.Second,
 		MaxRetries: app.Config.MaxRetries,
+	}
+	if showProgress {
+		var prog *ui.Progress
+		opts.OnProgress = func(written, total int64) {
+			if prog == nil {
+				prog = ui.NewProgress(os.Stderr, "Downloading "+pkg.Filename, total)
+			}
+			prog.Update(written)
+			if total > 0 && written >= total {
+				prog.Finish()
+			}
+		}
 	}
 	result, err := fetch.DownloadFileRacing(ctx, candidates, debPath, opts)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/identify"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newIdentifyCmd() *cobra.Command {
@@ -45,17 +46,27 @@ func newIdentifyCmd() *cobra.Command {
 			}
 
 			app.EmitResult(result, func() {
-				switch result.Method {
-				case identify.MethodNone:
-					fmt.Println("no match found (try `pwnlibc download` more versions to grow the local index, or drop --offline)")
-				default:
-					fmt.Printf("%-24s method=%-16s confidence=%s\n", result.VersionArch, result.Method, result.Confidence)
-					if result.BuildID != "" {
-						fmt.Printf("  build-id: %s\n", result.BuildID)
-					}
-					for _, c := range result.Candidates[min(1, len(result.Candidates)):] {
-						fmt.Printf("  candidate: %-24s %d/%d anchors matched\n", c.VersionArch, c.Matched, c.Compared)
-					}
+				if result.Method == identify.MethodNone {
+					fmt.Println(ui.Error("no match found (try `pwnlibc download` more versions to grow the local index, or drop --offline)"))
+					return
+				}
+
+				rows := [][2]string{
+					{"File", ui.Cyan(args[0])},
+					{"Architecture", info.Arch},
+				}
+				if result.BuildID != "" {
+					rows = append(rows, [2]string{"BuildID", ui.Cyan(result.BuildID)})
+				}
+				rows = append(rows,
+					[2]string{"Version", ui.Cyan(result.VersionArch)},
+					[2]string{"Method", string(result.Method)},
+					[2]string{"Confidence", result.Confidence},
+				)
+				fmt.Println(ui.Box("glibc identification", rows, "Match confirmed"))
+
+				for _, c := range result.Candidates[min(1, len(result.Candidates)):] {
+					fmt.Println(ui.Dim(fmt.Sprintf("  candidate: %-24s %d/%d anchors matched", c.VersionArch, c.Matched, c.Compared)))
 				}
 			})
 			return nil

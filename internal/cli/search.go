@@ -12,6 +12,7 @@ import (
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/elfinfo"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/libcrip"
 	"github.com/0xCyb3rgh0st/pwnlibc/internal/packages"
+	"github.com/0xCyb3rgh0st/pwnlibc/internal/ui"
 )
 
 func newSearchCmd() *cobra.Command {
@@ -75,7 +76,7 @@ func searchByBuildID(buildID string) error {
 	}
 	app.EmitResult(matches, func() {
 		if len(matches) == 0 {
-			fmt.Println("no match locally or on libc.rip")
+			fmt.Println(ui.Error("no match locally or on libc.rip"))
 			return
 		}
 		for _, m := range matches {
@@ -93,7 +94,7 @@ func searchByVersion(query string) error {
 	results := list.SearchByVersionPrefix(query)
 	app.EmitResult(results, func() {
 		if len(results) == 0 {
-			fmt.Println("no matching versions; try `pwnlibc mirror update` first")
+			fmt.Println(ui.Error("no matching versions; try `pwnlibc mirror update` first"))
 			return
 		}
 		for _, p := range results {
@@ -135,7 +136,7 @@ func searchLocal(libcPath string, symbols []string, endsWith, str string) error 
 		}
 		app.EmitResult(map[string]interface{}{"path": libcPath, "string": str, "offsets_hex": hexAll(offsets)}, func() {
 			if len(offsets) == 0 {
-				fmt.Printf("%q not found in .rodata/.data\n", str)
+				fmt.Println(ui.Error("%q not found in .rodata/.data", str))
 				return
 			}
 			for _, o := range offsets {
@@ -189,7 +190,7 @@ func searchBySymbols(symArgs []string, tol int) error {
 
 	app.EmitResult(matches, func() {
 		if len(matches) == 0 {
-			fmt.Println("no libc.rip matches")
+			fmt.Println(ui.Error("no libc.rip matches"))
 			return
 		}
 		for _, m := range matches {
