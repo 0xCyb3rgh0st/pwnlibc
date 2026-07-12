@@ -28,7 +28,7 @@ services:
 
   # `docker compose run --rm lint` -- golangci-lint against the mounted source.
   lint:
-    image: golangci/golangci-lint:v1.60-alpine
+    image: golangci/golangci-lint:v2.12.2-alpine
     working_dir: /src
     volumes:
       - .:/src

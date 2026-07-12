@@ -4,7 +4,6 @@ package jsonout
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -44,10 +43,4 @@ func CodeOf(err error) string {
 		return c.Code()
 	}
 	return "internal"
-}
-
-// Fprintf is a tiny helper so CLI code doesn't need to import fmt separately
-// just to guard human-readable prints behind a !jsonMode check.
-func Fprintf(w io.Writer, format string, a ...interface{}) {
-	fmt.Fprintf(w, format, a...)
 }

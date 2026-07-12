@@ -65,6 +65,6 @@ func ShouldShowBanner(w io.Writer, opts BannerOptions) bool {
 // blank line, with no suppression logic -- used by the explicit `banner`
 // subcommand, which should always show something when asked directly.
 func PrintBanner(w io.Writer) {
-	fmt.Fprintln(w, Banner(w))
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, Banner(w))
+	_, _ = fmt.Fprintln(w)
 }

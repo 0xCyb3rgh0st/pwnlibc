@@ -29,8 +29,8 @@ func hostPath(containerPath string) (string, error) {
 		return rel, nil
 	}
 	return "", fmt.Errorf(
-		"%q is outside /data/libs and /data/workdir; nested docker mounts (used by `build`/`run`) can only reach files under those paths. "+
-			"Drop challenge binaries into ./workdir on the host (mounted at /data/workdir).", containerPath)
+		"%q is outside /data/libs and /data/workdir; nested docker mounts (used by `build`/`run`) can only reach files under those paths, "+
+			"drop challenge binaries into ./workdir on the host (mounted at /data/workdir)", containerPath)
 }
 
 func underRoot(abs, containerRoot, hostRoot string) (string, bool) {

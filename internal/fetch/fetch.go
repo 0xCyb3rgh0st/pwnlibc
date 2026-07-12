@@ -166,7 +166,7 @@ func DownloadFileRacing(ctx context.Context, candidates []Candidate, destPath st
 	defer func() { _ = out.Close() }()
 
 	h := sha256.New()
-	var dest io.Writer = io.MultiWriter(out, h)
+	dest := io.MultiWriter(out, h)     // io.MultiWriter already returns io.Writer
 	total := winner.resp.ContentLength // -1 if the server didn't send Content-Length
 	if opts.OnProgress != nil {
 		opts.OnProgress(0, total)

@@ -145,7 +145,7 @@ func Build(ctx context.Context, opts Options) error {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if opts.LogW != nil {
-			fmt.Fprintln(opts.LogW, line)
+			_, _ = fmt.Fprintln(opts.LogW, line)
 		}
 		if strings.HasPrefix(line, "BUILD_OK") {
 			sawOK = true

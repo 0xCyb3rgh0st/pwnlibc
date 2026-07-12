@@ -122,14 +122,14 @@ func NewRootCmd() *cobra.Command {
 			ui.PrintBanner(out)
 		}
 		if s := cmd.Long; s != "" {
-			fmt.Fprintln(out, s)
-			fmt.Fprintln(out)
+			_, _ = fmt.Fprintln(out, s)
+			_, _ = fmt.Fprintln(out)
 		} else if s := cmd.Short; s != "" {
-			fmt.Fprintln(out, s)
-			fmt.Fprintln(out)
+			_, _ = fmt.Fprintln(out, s)
+			_, _ = fmt.Fprintln(out)
 		}
 		if cmd.Runnable() || cmd.HasSubCommands() {
-			fmt.Fprintln(out, cmd.UsageString())
+			_, _ = fmt.Fprintln(out, cmd.UsageString())
 		}
 	})
 

@@ -95,15 +95,23 @@ func Error(format string, a ...interface{}) string {
 // Fprintln* are thin convenience wrappers so callers don't need a separate
 // fmt import purely to print one status line.
 func FprintSuccess(w io.Writer, format string, a ...interface{}) {
-	fmt.Fprintln(w, Success(format, a...))
+	_, _ = fmt.Fprintln(w, Success(format, a...))
 }
-func FprintInfo(w io.Writer, format string, a ...interface{}) { fmt.Fprintln(w, Info(format, a...)) }
-func FprintStep(w io.Writer, format string, a ...interface{}) { fmt.Fprintln(w, Step(format, a...)) }
+func FprintInfo(w io.Writer, format string, a ...interface{}) {
+	_, _ = fmt.Fprintln(w, Info(format, a...))
+}
+func FprintStep(w io.Writer, format string, a ...interface{}) {
+	_, _ = fmt.Fprintln(w, Step(format, a...))
+}
 func FprintAction(w io.Writer, format string, a ...interface{}) {
-	fmt.Fprintln(w, Action(format, a...))
+	_, _ = fmt.Fprintln(w, Action(format, a...))
 }
-func FprintWarn(w io.Writer, format string, a ...interface{})  { fmt.Fprintln(w, Warn(format, a...)) }
-func FprintError(w io.Writer, format string, a ...interface{}) { fmt.Fprintln(w, Error(format, a...)) }
+func FprintWarn(w io.Writer, format string, a ...interface{}) {
+	_, _ = fmt.Fprintln(w, Warn(format, a...))
+}
+func FprintError(w io.Writer, format string, a ...interface{}) {
+	_, _ = fmt.Fprintln(w, Error(format, a...))
+}
 
 // IsInteractive reports whether w is connected to a terminal. Used to gate
 // the banner and progress bars -- anything that would corrupt redirected

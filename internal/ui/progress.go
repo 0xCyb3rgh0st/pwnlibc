@@ -48,7 +48,7 @@ func (p *Progress) Update(n int64) {
 			bar[i] = '-'
 		}
 	}
-	fmt.Fprintf(p.w, "\r%s [%s] %3.0f%%", p.label, bar, frac*100)
+	_, _ = fmt.Fprintf(p.w, "\r%s [%s] %3.0f%%", p.label, bar, frac*100)
 }
 
 // Finish clears the progress line so the caller's subsequent [+]/[-]
@@ -57,5 +57,5 @@ func (p *Progress) Finish() {
 	if !p.active {
 		return
 	}
-	fmt.Fprint(p.w, "\r\033[K")
+	_, _ = fmt.Fprint(p.w, "\r\033[K")
 }

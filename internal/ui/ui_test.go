@@ -63,24 +63,17 @@ func TestIsInteractiveFalseForBuffer(t *testing.T) {
 }
 
 func TestInCIRespectsCIEnvVar(t *testing.T) {
-	orig, had := os.LookupEnv("CI")
-	defer func() {
-		if had {
-			os.Setenv("CI", orig)
-		} else {
-			os.Unsetenv("CI")
-		}
-	}()
-
-	os.Setenv("CI", "true")
+	t.Setenv("CI", "true")
 	if !InCI() {
 		t.Error("expected InCI() true when CI=true")
 	}
-	os.Setenv("CI", "")
+	t.Setenv("CI", "")
 	if InCI() {
 		t.Error("expected InCI() false when CI is empty")
 	}
-	os.Unsetenv("CI")
+	if err := os.Unsetenv("CI"); err != nil {
+		t.Fatal(err)
+	}
 	if InCI() {
 		t.Error("expected InCI() false when CI is unset")
 	}
@@ -104,15 +97,7 @@ func TestShouldShowBannerSuppressedWhenNotInteractive(t *testing.T) {
 }
 
 func TestShouldShowBannerSuppressedInCI(t *testing.T) {
-	orig, had := os.LookupEnv("CI")
-	defer func() {
-		if had {
-			os.Setenv("CI", orig)
-		} else {
-			os.Unsetenv("CI")
-		}
-	}()
-	os.Setenv("CI", "true")
+	t.Setenv("CI", "true")
 
 	var buf bytes.Buffer
 	if ShouldShowBanner(&buf, BannerOptions{}) {
