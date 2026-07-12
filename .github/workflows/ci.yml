@@ -20,7 +20,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: golangci-lint (in container)
-        run: docker compose run --rm lint
+        id: lint
+        run: |
+          set -o pipefail
+          docker compose run --rm lint 2>&1 | tee lint-output.log
+      - name: Surface failure output as an annotation
+        if: failure() && steps.lint.outcome == 'failure'
+        run: |
+          # The GitHub Actions log viewer is JS-rendered and the raw-log API
+          # needs auth, both unreachable for quick diagnosis -- but check-run
+          # annotations ARE readable via the public API, so mirror the
+          # tail of the output there as a fallback diagnostic channel.
+          tail -c 3000 lint-output.log | while IFS= read -r line; do
+            echo "::error::${line}"
+          done
+      - name: Upload lint output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-output
+          path: lint-output.log
+          retention-days: 7
 
   build-and-scan:
     needs: [test, lint]

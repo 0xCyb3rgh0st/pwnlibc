@@ -33,7 +33,11 @@ services:
     volumes:
       - .:/src
       - golangci-cache:/root/.cache/golangci-lint
-    command: ["golangci-lint", "run", "./..."]
+    # --timeout is explicit rather than relying on golangci-lint's default:
+    # a cold run (no persisted module/build cache, as every CI run gets)
+    # has to download and type-check the full module graph, which can
+    # exceed a short default on GitHub's constrained free-tier runners.
+    command: ["golangci-lint", "run", "--timeout=5m", "./..."]
     profiles: ["lint"]
 
   # `docker compose --profile build-src run --rm build-src <args>` -- the
